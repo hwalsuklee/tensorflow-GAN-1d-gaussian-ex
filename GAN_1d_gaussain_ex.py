@@ -4,7 +4,8 @@ import tensorflow as tf
 
 RANGE = 5
 
-#p_d(x)
+
+# p_d(x)
 class DataDistribution(object):
     def __init__(self, mu, sigma):
         self.mu = mu
@@ -15,6 +16,7 @@ class DataDistribution(object):
         samples.sort()
         return samples
 
+
 # p_z(z)
 class NoiseDistribution(object):
     def __init__(self, range):
@@ -22,9 +24,10 @@ class NoiseDistribution(object):
 
     # equally spaced samples + noise
     def sample(self, N):
-        offset = np.random.random(N)*(float(self.range)/N)
-        samples = np.linspace(-self.range, self.range, N)+offset
+        offset = np.random.random(N) * (float(self.range) / N)
+        samples = np.linspace(-self.range, self.range, N) + offset
         return samples
+
 
 # G(z)
 def generator(x, n_hidden=32):
@@ -45,6 +48,7 @@ def generator(x, n_hidden=32):
 
     return o
 
+
 # D(x)
 def discriminator(x, n_hidden=32):
 
@@ -64,8 +68,9 @@ def discriminator(x, n_hidden=32):
 
     return o
 
+
 # re-used for optimizing all networks
-def optimizer(loss, var_list, num_decay_steps = 400, initial_learning_rate=0.03):
+def optimizer(loss, var_list, num_decay_steps=400, initial_learning_rate=0.03):
     decay = 0.95
     batch = tf.Variable(0)
     learning_rate = tf.train.exponential_decay(
@@ -82,12 +87,13 @@ def optimizer(loss, var_list, num_decay_steps = 400, initial_learning_rate=0.03)
     )
     return optimizer
 
+
 # plot decision boundaries (init, pre-trained, trained) and p_data, p_g
 class ResultPlot(object):
     def __init__(self, num_points, num_bins, mu, sigma):
         self.num_points = num_points    # number of data points to be evaluated
         self.num_bins = num_bins        # number of bins to get histogram
-        
+
         self.mu = mu                    # mu of p_data
         self.sigma = sigma              # sigma of p_data
 
@@ -112,9 +118,10 @@ class ResultPlot(object):
         plt.grid(True)
 
         if save_img:
-            plt.savefig('GAN_1d_gaussian'+'_mu_%g' % self.mu + '_sigma_%g'% self.sigma +'.png')
+            plt.savefig('GAN_1d_gaussian' + '_mu_%g' % self.mu + '_sigma_%g' % self.sigma + '.png')
 
         plt.show()
+
 
 def main():
     """ parameters """
@@ -153,7 +160,7 @@ def main():
     # loss for each network
     eps = 1e-2  # to prevent log(0) case
     pre_loss = tf.reduce_mean(tf.square(D_pre - pre_labels))
-    loss_g = tf.reduce_mean(-tf.log(D_fake+eps))
+    loss_g = tf.reduce_mean(-tf.log(D_fake + eps))
     loss_d = tf.reduce_mean(-tf.log(D_real + eps) - tf.log(1 - D_fake + eps))
 
     # trainable variables for each network
@@ -164,7 +171,7 @@ def main():
     # optimizer for each network
     pre_opt = optimizer(pre_loss, d_pre_params, 400, LR)
     opt_d = optimizer(loss_d, d_params, 400, LR)
-    opt_g = optimizer(loss_g, g_params, 400, LR/2)
+    opt_g = optimizer(loss_g, g_params, 400, LR / 2)
 
     """ training """
 
@@ -173,7 +180,7 @@ def main():
     tf.global_variables_initializer().run()
 
     # sources
-    p_data = DataDistribution(mu,sigma)
+    p_data = DataDistribution(mu, sigma)
     p_z = NoiseDistribution(RANGE)
 
     # class for result-plot
@@ -188,7 +195,7 @@ def main():
     num_pretrain_steps = 1000
     for step in range(num_pretrain_steps):
 
-        print ('pre-training :  %d/%d' % (step+1, num_pretrain_steps))
+        print('pre-training :  %d/%d' % (step + 1, num_pretrain_steps))
 
         # Object of pre-training is to make decision boundary as similar as pdf of data (i.e. p_data)
         # Since p_data is unknown in real situation, we get histogram and estimate pdf
@@ -200,7 +207,7 @@ def main():
         # Estimated pdf is used as labels after normalization
         max_histc = np.max(histc)
         min_histc = np.min(histc)
-        labels = (histc-min_histc)/(max_histc-min_histc)
+        labels = (histc - min_histc) / (max_histc - min_histc)
         d = edges[1:]
 
         # Execute one training step
@@ -224,7 +231,7 @@ def main():
     # training-loop
     for step in range(TRAIN_ITERS):
 
-        np.random.seed(np.random.randint(0,TRAIN_ITERS))
+        np.random.seed(np.random.randint(0, TRAIN_ITERS))
 
         # update discriminator
         x_ = p_data.sample(B)
@@ -237,7 +244,7 @@ def main():
         loss_g_, _ = sess.run([loss_g, opt_g], {z: np.reshape(z_, (B, 1))})
 
         if step % 10 == 0:
-            print('[%d/%d]: loss_d : %.3f, loss_g : %.3f'%(step, TRAIN_ITERS, loss_d_, loss_g_))
+            print('[%d/%d]: loss_d : %.3f, loss_g : %.3f' % (step, TRAIN_ITERS, loss_d_, loss_g_))
 
     """ show results """
 
@@ -259,8 +266,9 @@ def main():
 
     # plot results
     plot.show_results(db_init, db_pre_trained, db_trained, pd, pg, save_img=True)
-    
+
     sess.close()
+
 
 if __name__ == '__main__':
     main()
